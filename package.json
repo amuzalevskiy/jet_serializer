@@ -1,0 +1,32 @@
+{
+  "name": "jet_serializer",
+  "description": "Recursive serializer for javascript",
+  "homepage": "http://jet-serializer.github.io/",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:amuzalevskiy/jet_serializer.git"
+  },
+  "keywords": [
+    "recursive",
+    "serialization",
+    "serializer",
+    "jet"
+  ],
+  "author": "Andrii Muzalevskyi <face2world@gmail.com>",
+  "dependencies": {},
+  "main": "./lib/jet_serializer",
+  "version": "0.1.2",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/amuzalevskiy/jet_serializer/issues"
+  },
+  "bin": {
+    "jet_serializer": "jet_serializer.js"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha"
+  }
+}
