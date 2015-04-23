@@ -1,4 +1,6 @@
-var util = require('util'), serializer;
+var util = require('util'), serializer,
+    originalToJSON = Object.prototype.toJSON,
+    toString = Object.prototype.toString;
 
 module.exports = serializer = {
     /**
@@ -16,65 +18,67 @@ module.exports = serializer = {
      */
     stringify: function (object, space) {
         var allObjects = [],
-            refs = [],
             duplicates = [],
+            duplicatesRefs = [],
             tmp;
 
-        function avoidRecursion(current, key, parent) {
-            var i, iDup, res;
+        function avoidRecursion(current) {
+            var i, res;
             if ((i = allObjects.indexOf(current)) !== -1) {
-                if ((iDup = duplicates.indexOf(current)) === -1) {
-                    iDup = duplicates.length;
+                if (duplicates.indexOf(current) === -1) {
+                    duplicatesRefs.push({
+                        $duplicate: duplicates.length
+                    });
                     duplicates.push(current);
-                    parent[key] = {$ref: iDup};
-                    refs[i][0][refs[i][1]] = {$ref: iDup};
-                } else {
-                    parent[key] = {$ref: iDup};
                 }
             } else {
                 if (util.isArray(current)) {
                     allObjects.push(current);
-                    refs.push([parent, key]);
                     for (i = 0; i < current.length; i++) {
-                        res = avoidRecursion(current[i], i, current);
+                        res = avoidRecursion(current[i]);
                     }
                 } else if (typeof current === 'object') {
-                    allObjects.push(current);
-                    refs.push([parent, key]);
-                    for (i in current) {
-                        if (current.hasOwnProperty(i)) {
-                            res = avoidRecursion(current[i], i, current);
-                        }
+                    switch (toString.call(current)) {
+                        case '[object Date]':
+                        case '[object RegExp]':
+                        case '[object Error]':
+                        case '[object Number]':
+                        case '[object String]':
+                            break;
+                        default:
+                            allObjects.push(current);
+                            for (i in current) {
+                                if (current.hasOwnProperty(i)) {
+                                    res = avoidRecursion(current[i]);
+                                }
+                            }
                     }
                 }
             }
         }
         tmp = [object];
-        avoidRecursion(object, 0 , tmp);
+        avoidRecursion(object);
         return JSON.stringify({
             $meta: {
                 serialize: {
                     me: tmp[0],
-                    duplicates: duplicates.length ? duplicates : undefined
+                    duplicates: duplicatesRefs.length ? duplicatesRefs : undefined
                 }
             }
-        }, function (k, v) {
-            var className = serializer.getClassName(v);
-            if (className) {
-                var data = typeof v.toJSON === 'function' ? v.toJSON() : util._extend({}, v);
-                data.$className = className;
-                return data;
-            }
+        }, function singleProp(k, v, isDuplicate) {
             if (v) {
-                if (typeof v.toJSON === 'function') {
-                    return v.toJSON();
-                }
-                switch (Object.prototype.toString.call(v)) {
+                console.log(toString.call(v), v);
+                switch (toString.call(v)) {
+                    case '[object Number]':
+                    case '[object String]':
+                        return v;
                     case '[object Date]':
+                        console.log('am in ===================================================================');
                         return {
                             $className: 'Date',
                             value: v.toISOString()
                         };
+
                     case '[object RegExp]':
                         return {
                             $className: 'RegExp',
@@ -87,6 +91,32 @@ module.exports = serializer = {
                             name: v.name,
                             message: v.message
                         };
+                    default:
+                        console.log('am in ==');
+                        if (v.$duplicate !== undefined && !isDuplicate) {
+                            return singleProp(k, duplicates[v.$duplicate], true);
+                        }
+
+                        var duplicateId = duplicates.indexOf(v);
+                        if (duplicateId !== -1) {
+                            return {
+                                $ref: duplicateId
+                            }
+                        }
+
+                        var className = serializer.getClassName(v);
+                        if (className) {
+                            var data = (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') ?
+                                v.toJSON() :
+                                util._extend({}, v);
+                            data.$className = className;
+                            return data;
+                        }
+
+                        if (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') {
+                            console.log('test');
+                            return v.toJSON();
+                        }
                 }
             }
             return v;
@@ -100,7 +130,7 @@ module.exports = serializer = {
      * @returns {*}
      */
     parse: function (str) {
-        // console.log(str);
+        console.log(str);
         var first = JSON.parse(str), me, duplicates, tmp;
         if (!first.$meta && !first.$meta.serialize) {
             throw new Error('Invalid argument passed');

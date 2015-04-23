@@ -21,14 +21,14 @@ describe('Jet_Serializer', function(){
 
     it('should restore dates', function() {
         var x = new Date(), x2 = {x: new Date()};
-        assert(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
-        assert(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
+        assert.equal(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
+        assert.deepEqual(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
     });
 
     it('should restore RegExp\'s', function() {
         var x = /test/i, x2 = {x: /test/m};
-        assert(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
-        assert(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
+        assert.equal(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
+        assert.deepEqual(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
     });
 
     it('should serialize and unserialize object with recursive ref', function() {
@@ -36,8 +36,8 @@ describe('Jet_Serializer', function(){
         x.x = x;
         x.x2 = x;
         xRes = Jet_Serializer.parse(Jet_Serializer.stringify(x));
-        assert.equal(xRes, xRes.x);
-        assert.equal(xRes.x, xRes.x2);
+        assert.strictEqual(xRes, xRes.x);
+        assert.strictEqual(xRes.x, xRes.x2);
     });
 
     it('should serialize and unserialize array', function() {
@@ -89,7 +89,6 @@ describe('Jet_Serializer', function(){
         assert(xRestored.wakedUp, true);
     });
 
-
     it('should not change initial object', function() {
         function d () {
             this.x = 5;
@@ -118,21 +117,21 @@ describe('Jet_Serializer', function(){
 
         Jet_Serializer.stringify(x);
 
-        assert.equal(x.x, x);
-        assert.equal(x.y, y);
-        assert.equal(x.z, z);
+        assert.strictEqual(x.x, x);
+        assert.strictEqual(x.y, y);
+        assert.strictEqual(x.z, z);
 
-        assert.equal(x.x.x, x);
-        assert.equal(x.x.y, y);
-        assert.equal(x.x.z, z);
+        assert.strictEqual(x.x.x, x);
+        assert.strictEqual(x.x.y, y);
+        assert.strictEqual(x.x.z, z);
 
-        assert.equal(x.y.x, x);
-        assert.equal(x.y.y, y);
-        assert.equal(x.y.z, z);
+        assert.strictEqual(x.y.x, x);
+        assert.strictEqual(x.y.y, y);
+        assert.strictEqual(x.y.z, z);
 
-        assert.equal(x.z.x, x);
-        assert.equal(x.z.y, y);
-        assert.equal(x.z.z, z);
+        assert.strictEqual(x.z.x, x);
+        assert.strictEqual(x.z.y, y);
+        assert.strictEqual(x.z.z, z);
 
         assert.equal(x.x.name, 'x');
         assert.equal(x.y.name, 'y');
@@ -177,16 +176,23 @@ describe('Jet_Serializer', function(){
         var xRestored = Jet_Serializer.parse(Jet_Serializer.stringify(x));
         assert(xRestored instanceof d);
 
-        assert.equal(xRestored.x, xRestored.x.x);
-        assert.equal(xRestored.x, xRestored.y.x);
-        assert.equal(xRestored.x, xRestored.z.x);
+        assert.strictEqual(xRestored.x, xRestored.x.x);
+        assert.strictEqual(xRestored.x, xRestored.y.x);
+        assert.strictEqual(xRestored.x, xRestored.z.x);
 
-        assert.equal(xRestored.y, xRestored.x.y);
-        assert.equal(xRestored.y, xRestored.y.y);
-        assert.equal(xRestored.y, xRestored.z.y);
+        assert.strictEqual(xRestored.y, xRestored.x.y);
+        assert.strictEqual(xRestored.y, xRestored.y.y);
+        assert.strictEqual(xRestored.y, xRestored.z.y);
 
-        assert.equal(xRestored.z, xRestored.x.z);
-        assert.equal(xRestored.z, xRestored.y.z);
-        assert.equal(xRestored.z, xRestored.z.z);
+        assert.strictEqual(xRestored.z, xRestored.x.z);
+        assert.strictEqual(xRestored.z, xRestored.y.z);
+        assert.strictEqual(xRestored.z, xRestored.z.z);
+    });
+
+
+    it('should restore dates', function() {
+        var x = new Date(), x2 = {x: new Date()};
+        assert.equal(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
+        //assert.deepEqual(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
     });
 });
