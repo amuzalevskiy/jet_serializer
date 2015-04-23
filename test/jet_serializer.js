@@ -21,8 +21,11 @@ describe('Jet_Serializer', function(){
 
     it('should restore dates', function() {
         var x = new Date(), x2 = {x: new Date()};
-        assert.equal(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
-        assert.deepEqual(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
+
+        assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x))));
+        assert.equal(x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x)).toISOString());
+        assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x2.x))));
+        assert.equal(x2.x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x.toISOString());
     });
 
     it('should restore RegExp\'s', function() {
@@ -187,12 +190,5 @@ describe('Jet_Serializer', function(){
         assert.strictEqual(xRestored.z, xRestored.x.z);
         assert.strictEqual(xRestored.z, xRestored.y.z);
         assert.strictEqual(xRestored.z, xRestored.z.z);
-    });
-
-
-    it('should restore dates', function() {
-        var x = new Date(), x2 = {x: new Date()};
-        assert.equal(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
-        //assert.deepEqual(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
     });
 });

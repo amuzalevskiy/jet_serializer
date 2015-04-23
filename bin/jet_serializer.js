@@ -66,19 +66,12 @@ module.exports = serializer = {
                 }
             }
         }, function singleProp(k, v, isDuplicate) {
+            var i;
             if (v) {
-                console.log(toString.call(v), v);
                 switch (toString.call(v)) {
                     case '[object Number]':
                     case '[object String]':
                         return v;
-                    case '[object Date]':
-                        console.log('am in ===================================================================');
-                        return {
-                            $className: 'Date',
-                            value: v.toISOString()
-                        };
-
                     case '[object RegExp]':
                         return {
                             $className: 'RegExp',
@@ -92,7 +85,6 @@ module.exports = serializer = {
                             message: v.message
                         };
                     default:
-                        console.log('am in ==');
                         if (v.$duplicate !== undefined && !isDuplicate) {
                             return singleProp(k, duplicates[v.$duplicate], true);
                         }
@@ -106,16 +98,34 @@ module.exports = serializer = {
 
                         var className = serializer.getClassName(v);
                         if (className) {
-                            var data = (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') ?
+                            v = (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') ?
                                 v.toJSON() :
                                 util._extend({}, v);
-                            data.$className = className;
-                            return data;
+                            v.$className = className;
+                        } else if (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') {
+                            v = v.toJSON();
                         }
 
-                        if (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') {
-                            console.log('test');
-                            return v.toJSON();
+                        if (util.isArray(v)) {
+                            for (i = 0; i < v.length; i++) {
+                                if (toString.call(v[i]) == '[object Date]') {
+                                    v[i] = {
+                                        $className: 'Date',
+                                        value: v[i].toISOString()
+                                    };
+                                }
+                            }
+                        } else {
+                            for (i in v) {
+                                if (v.hasOwnProperty(i)) {
+                                    if (toString.call(v[i]) == '[object Date]') {
+                                        v[i] = {
+                                            $className: 'Date',
+                                            value: v[i].toISOString()
+                                        };
+                                    }
+                                }
+                            }
                         }
                 }
             }
@@ -130,7 +140,7 @@ module.exports = serializer = {
      * @returns {*}
      */
     parse: function (str) {
-        console.log(str);
+        //console.log(str);
         var first = JSON.parse(str), me, duplicates, tmp;
         if (!first.$meta && !first.$meta.serialize) {
             throw new Error('Invalid argument passed');
