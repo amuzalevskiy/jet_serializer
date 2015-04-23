@@ -28,5 +28,8 @@
   },
   "scripts": {
     "test": "mocha"
+  },
+  "devDependencies": {
+    "underscore": "^1.8.3"
   }
 }
