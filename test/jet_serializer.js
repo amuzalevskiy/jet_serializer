@@ -25,13 +25,16 @@ describe('Jet_Serializer', function(){
         assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x))));
         assert.equal(x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x)).toISOString());
         assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x2.x))));
+        console.log("\n\n" + Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
         assert.equal(x2.x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x.toISOString());
     });
 
     it('should restore RegExp\'s', function() {
         var x = /test/i, x2 = {x: /test/m};
-        assert.equal(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
-        assert.deepEqual(x2, Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
+        assert.equal('[object RegExp]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x))));
+        assert.equal(x.toString(), Jet_Serializer.parse(Jet_Serializer.stringify(x)).toString());
+        assert.equal('[object RegExp]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x2.x))));
+        assert.equal(x2.x.toString(), Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x.toString());
     });
 
     it('should serialize and unserialize object with recursive ref', function() {

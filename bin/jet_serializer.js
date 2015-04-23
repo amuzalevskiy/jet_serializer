@@ -58,7 +58,33 @@ module.exports = serializer = {
         }
         tmp = [object];
         avoidRecursion(object);
-        return JSON.stringify({
+
+        var origDateToJSON = Date.prototype.toJSON,
+            origRegExpToJSON = RegExp.prototype.toJSON,
+            origErrorToJSON = Error.prototype.toJSON;
+
+        Date.prototype.toJSON = function () {
+            return {
+                $className: 'Date',
+                value: this.toISOString()
+            }
+        };
+        RegExp.prototype.toJSON = function () {
+            return {
+                $className: 'RegExp',
+                source: this.source,
+                flags: this.toString().match(/[gim]*$/)[0]
+            };
+        };
+        Error.prototype.toJSON = function () {
+            return {
+                $className: 'Error',
+                name: this.name,
+                message: this.message
+            };
+        };
+
+        var result = JSON.stringify({
             $meta: {
                 serialize: {
                     me: tmp[0],
@@ -72,27 +98,17 @@ module.exports = serializer = {
                     case '[object Number]':
                     case '[object String]':
                         return v;
-                    case '[object RegExp]':
-                        return {
-                            $className: 'RegExp',
-                            source: v.source,
-                            flags: v.toString().match(/[gim]*$/)[0]
-                        };
-                    case '[object Error]':
-                        return {
-                            $className: 'Error',
-                            name: v.name,
-                            message: v.message
-                        };
                     default:
-                        if (v.$duplicate !== undefined && !isDuplicate) {
+                        if (v.$duplicate !== undefined) {
                             return singleProp(k, duplicates[v.$duplicate], true);
                         }
 
-                        var duplicateId = duplicates.indexOf(v);
-                        if (duplicateId !== -1) {
-                            return {
-                                $ref: duplicateId
+                        if (!isDuplicate) {
+                            var duplicateId = duplicates.indexOf(v);
+                            if (duplicateId !== -1) {
+                                return {
+                                    $ref: duplicateId
+                                }
                             }
                         }
 
@@ -105,32 +121,16 @@ module.exports = serializer = {
                         } else if (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') {
                             v = v.toJSON();
                         }
-
-                        if (util.isArray(v)) {
-                            for (i = 0; i < v.length; i++) {
-                                if (toString.call(v[i]) == '[object Date]') {
-                                    v[i] = {
-                                        $className: 'Date',
-                                        value: v[i].toISOString()
-                                    };
-                                }
-                            }
-                        } else {
-                            for (i in v) {
-                                if (v.hasOwnProperty(i)) {
-                                    if (toString.call(v[i]) == '[object Date]') {
-                                        v[i] = {
-                                            $className: 'Date',
-                                            value: v[i].toISOString()
-                                        };
-                                    }
-                                }
-                            }
-                        }
                 }
             }
             return v;
         }, space);
+
+        Date.prototype.toJSON = origDateToJSON;
+        RegExp.prototype.toJSON = origRegExpToJSON;
+        Error.prototype.toJSON = origErrorToJSON;
+
+        return result;
     },
 
     /**
@@ -140,8 +140,8 @@ module.exports = serializer = {
      * @returns {*}
      */
     parse: function (str) {
-        //console.log(str);
-        var first = JSON.parse(str), me, duplicates, tmp;
+        // console.log(str);
+        var first = JSON.parse(str), me, duplicates, tmp, resolvedObj = [];
         if (!first.$meta && !first.$meta.serialize) {
             throw new Error('Invalid argument passed');
         }
@@ -149,12 +149,20 @@ module.exports = serializer = {
         duplicates = first.$meta.serialize.duplicates || [];
         function resolveRecursion(current, key, parent) {
             var i, tmp;
+            switch (toString.call(current)) {
+                case '[object Number]':
+                case '[object String]':
+                    return;
+            }
             if (current && current.hasOwnProperty('$ref')) {
                 parent[key] = duplicates[current.$ref];
             } else {
+                resolvedObj.push(current);
                 if (util.isArray(current)) {
                     for (i = 0; i < current.length; i++) {
-                        resolveRecursion(current[i], i, current);
+                        if (resolvedObj.indexOf(current[i]) === -1) {
+                            resolveRecursion(current[i], i, current);
+                        }
                     }
                 } else if (typeof current == 'object' && current !== null) {
                     if (current.$className) {
@@ -183,12 +191,24 @@ module.exports = serializer = {
                                         configurable: true
                                     }
                                 }), current);
+
+                                for (i in current) {
+                                    if (current.hasOwnProperty(i)) {
+                                        if (resolvedObj.indexOf(current[i]) === -1) {
+                                            resolveRecursion(current[i], i, current);
+                                        }
+                                    }
+                                }
+
                                 break;
                         }
-                    }
-                    for (i in current) {
-                        if (current.hasOwnProperty(i)) {
-                            resolveRecursion(current[i], i, current);
+                    } else {
+                        for (i in current) {
+                            if (current.hasOwnProperty(i)) {
+                                if (resolvedObj.indexOf(current[i]) === -1) {
+                                    resolveRecursion(current[i], i, current);
+                                }
+                            }
                         }
                     }
                     if (typeof current.$wakeup === 'function') {
