@@ -36,4 +36,4 @@ console.log(xRestored);
 Install mocha (`npm install -g mocha`) and type `npm test` in console
 
 ## Change log
-24.04.2015 | 0.1.5 |  First stable release
+0.1.5 (24.04.2015) - First stable release
