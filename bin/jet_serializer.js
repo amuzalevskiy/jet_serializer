@@ -57,7 +57,7 @@ module.exports = serializer = {
             }
         }
         tmp = [object];
-        avoidRecursion(object);
+        avoidRecursion(tmp);
 
         var origDateToJSON = Date.prototype.toJSON,
             origRegExpToJSON = RegExp.prototype.toJSON,
@@ -147,6 +147,23 @@ module.exports = serializer = {
         }
         me = first.$meta.serialize.me;
         duplicates = first.$meta.serialize.duplicates || [];
+
+        function buildInstance(className, current) {
+            var ctor = serializer.getConstructor(className);
+            if (!ctor) {
+                throw new Error("Cannot find constructor for class name <" + className +">");
+            }
+            delete current.$className;
+            return util._extend(Object.create(ctor.prototype, {
+                constructor: {
+                    value: ctor,
+                    enumerable: false,
+                    writable: true,
+                    configurable: true
+                }
+            }), current);
+        }
+
         function resolveRecursion(current, key, parent) {
             var i, tmp;
             switch (toString.call(current)) {
@@ -168,7 +185,6 @@ module.exports = serializer = {
                     if (current.$className) {
                         var className = current.$className,
                             ctor;
-                        delete current.$className;
                         switch (className) {
                             case 'Date':
                                 current = parent[key] = new Date(current.value);
@@ -183,14 +199,9 @@ module.exports = serializer = {
                                 break;
                             default:
                                 ctor = serializer.getConstructor(className);
-                                current = parent[key] = util._extend(Object.create(ctor.prototype, {
-                                    constructor: {
-                                        value: ctor,
-                                        enumerable: false,
-                                        writable: true,
-                                        configurable: true
-                                    }
-                                }), current);
+                                if (ctor) {
+                                    current = parent[key] = buildInstance(className, current);
+                                }
 
                                 for (i in current) {
                                     if (current.hasOwnProperty(i)) {
@@ -217,11 +228,20 @@ module.exports = serializer = {
                 }
             }
         }
+
+        for (var i = 0; i < duplicates.length; i++) {
+            var duplicate = duplicates[i];
+            if (duplicate.$className) {
+                duplicates[i] = buildInstance(duplicate.$className, duplicate);
+            }
+        }
         resolveRecursion(duplicates);
         tmp = [me];
         resolveRecursion(me, 0, tmp);
         return tmp[0];
     },
+
+
 
     /**
      * Register class to be able stringify it

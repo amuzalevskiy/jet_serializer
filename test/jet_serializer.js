@@ -25,7 +25,6 @@ describe('Jet_Serializer', function(){
         assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x))));
         assert.equal(x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x)).toISOString());
         assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x2.x))));
-        console.log("\n\n" + Jet_Serializer.parse(Jet_Serializer.stringify(x2)));
         assert.equal(x2.x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x.toISOString());
     });
 
@@ -142,18 +141,6 @@ describe('Jet_Serializer', function(){
         assert.equal(x.x.name, 'x');
         assert.equal(x.y.name, 'y');
         assert.equal(x.z.name, 'z');
-
-        assert.equal(x.x.x.name, 'x');
-        assert.equal(x.x.y.name, 'y');
-        assert.equal(x.x.z.name, 'z');
-
-        assert.equal(x.y.x.name, 'x');
-        assert.equal(x.y.y.name, 'y');
-        assert.equal(x.y.z.name, 'z');
-
-        assert.equal(x.z.x.name, 'x');
-        assert.equal(x.z.y.name, 'y');
-        assert.equal(x.z.z.name, 'z');
     });
 
     it('should restore duplicate classes', function() {
