@@ -1,7 +1,6 @@
 {
   "name": "jet_serializer",
   "description": "Recursive serializer for javascript",
-  "homepage": "http://jet-serializer.github.io/",
   "repository": {
     "type": "git",
     "url": "git@github.com:amuzalevskiy/jet_serializer.git"
