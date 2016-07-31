@@ -1,4 +1,5 @@
-var util = require('util'), serializer,
+var util = require('util'),
+    serializer,
     originalToJSON = Object.prototype.toJSON,
     toString = Object.prototype.toString;
 

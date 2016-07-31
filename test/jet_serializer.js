@@ -1,5 +1,4 @@
 var assert = require("assert"),
-    _ = require("underscore"),
     Jet_Serializer = require('../bin/jet_serializer');
 
 describe('Jet_Serializer', function(){

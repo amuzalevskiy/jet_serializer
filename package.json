@@ -13,7 +13,7 @@
   ],
   "author": "Andrii Muzalevskyi <face2world@gmail.com>",
   "dependencies": {},
-  "main": "./lib/jet_serializer",
+  "main": "./bin/jet_serializer",
   "version": "0.1.5",
   "license": "MIT",
   "bugs": {
@@ -29,6 +29,6 @@
     "test": "mocha"
   },
   "devDependencies": {
-    "underscore": "^1.8.3"
+    "mocha": "^2.5.3"
   }
 }
