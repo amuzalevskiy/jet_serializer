@@ -2,10 +2,13 @@ var assert = require("assert"),
     serializer = require('../bin/jet_serializer');
 
 describe('serializer', function(){
-
+    var sparseArray = [];
+    sparseArray[10] = 1;
     var cases = [
         {},
         [],
+        sparseArray,
+        void 0,
         {number:5, string:"", subObject: {}, null_: null, bool: true, falsy: false},
         [5, "", {}, null],
         "string",
@@ -44,24 +47,40 @@ describe('serializer', function(){
 
     it('should ignore functions in object', function() {
         var x = {fn: function (){}, x: 5};
-        assert.deepEqual({x: 5}, serializer.parse(serializer.stringify(x)));
+        assert.deepEqual(
+            {x: 5},
+            serializer.parse(serializer.stringify(x))
+        );
     });
 
     it('should replace functions to null in array', function() {
-        var x = [5, "", {}, null, function () {}, 3];
-        assert.deepEqual([5, "", {}, null, null, 3], serializer.parse(serializer.stringify(x)));
+        var x = [5, function() {}, 3];
+        assert.deepEqual(
+            [5, null, 3],
+            serializer.parse(serializer.stringify(x))
+        );
     });
 
     it('should call toJSON', function() {
-        var xSer = {number: 5},
-            x = {toJSON: function () {return xSer;}};
-        assert.deepEqual(serializer.stringify(xSer), serializer.stringify(x));
+        var toJSONResult = {number: 5},
+            objWithToJSON = {
+                toJSON: function () {
+                    return toJSONResult;
+                }
+            };
+        assert.equal(serializer.stringify(toJSONResult), serializer.stringify(objWithToJSON));
     });
 
     it('should call toJSON for inner objects', function() {
-        var xSer = {number: 5},
-            x = {deep: {toJSON: function () {return xSer;}}};
-        assert.deepEqual(serializer.stringify({deep: xSer}), serializer.stringify(x));
+        var toJSONResult = {number: 5},
+            objWithToJSON = {
+                deeper: {
+                    toJSON: function () {
+                        return toJSONResult;
+                    }
+                }
+            };
+        assert.equal(serializer.stringify({deeper: toJSONResult}), serializer.stringify(objWithToJSON));
     });
 
     it('should restore classes', function() {
@@ -77,9 +96,9 @@ describe('serializer', function(){
         assert.equal(xRestored.x, x.x);
     });
 
-    it('should call $wakeup for objects', function() {
+    it('should call wakeUp for objects', function() {
         function dw () {}
-        dw.prototype.$wakeup = function () {this.wakedUp = true};
+        dw.prototype.wakeUp = function () {this.wakedUp = true};
         serializer.registerClass('dw', dw);
         var x = new dw(),
             xRestored = serializer.parse(serializer.stringify(x));
