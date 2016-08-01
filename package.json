@@ -12,9 +12,11 @@
     "jet"
   ],
   "author": "Andrii Muzalevskyi <face2world@gmail.com>",
-  "dependencies": {},
+  "dependencies": {
+    "util": "^0.10.3"
+  },
   "main": "./bin/jet_serializer",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/amuzalevskiy/jet_serializer/issues"

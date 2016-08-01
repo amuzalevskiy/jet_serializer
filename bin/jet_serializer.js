@@ -20,11 +20,13 @@ module.exports = serializer = {
     stringify: function (object, space) {
         var allObjects = [],
             duplicates = [],
-            duplicatesRefs = [],
-            tmp;
+            duplicatesRefs = [];
 
-        function avoidRecursion(current) {
-            var i, res;
+        function searchForDuplicates(current) {
+            var i, key;
+            if (current === null) {
+                return;
+            }
             if ((i = allObjects.indexOf(current)) !== -1) {
                 if (duplicates.indexOf(current) === -1) {
                     duplicatesRefs.push({
@@ -36,7 +38,7 @@ module.exports = serializer = {
                 if (util.isArray(current)) {
                     allObjects.push(current);
                     for (i = 0; i < current.length; i++) {
-                        res = avoidRecursion(current[i]);
+                        searchForDuplicates(current[i]);
                     }
                 } else if (typeof current === 'object') {
                     switch (toString.call(current)) {
@@ -48,17 +50,30 @@ module.exports = serializer = {
                             break;
                         default:
                             allObjects.push(current);
-                            for (i in current) {
-                                if (current.hasOwnProperty(i)) {
-                                    res = avoidRecursion(current[i]);
+                            for (key in current) {
+                                if (current.hasOwnProperty(key)) {
+                                    searchForDuplicates(current[key]);
                                 }
                             }
                     }
                 }
             }
         }
-        tmp = [object];
-        avoidRecursion(tmp);
+
+        function packClassInstance(v) {
+            var className = serializer.getClassName(v);
+            if (className) {
+                v = (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') ?
+                    v.toJSON() :
+                    util._extend({}, v);
+                v.$className = className;
+            } else if (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') {
+                v = v.toJSON();
+            }
+            return v;
+        }
+
+        searchForDuplicates([object]);
 
         var origDateToJSON = Date.prototype.toJSON,
             origRegExpToJSON = RegExp.prototype.toJSON,
@@ -86,42 +101,27 @@ module.exports = serializer = {
         };
 
         var result = JSON.stringify({
-            $meta: {
-                serialize: {
-                    me: tmp[0],
-                    duplicates: duplicatesRefs.length ? duplicatesRefs : undefined
-                }
-            }
-        }, function singleProp(k, v, isDuplicate) {
-            var i;
-            if (v) {
+            main: object,
+            $duplicates: duplicatesRefs.length ? duplicatesRefs : undefined
+        }, function singleProp(k, v) {
+            if (v && v !== null && v !== true && v !== false) {
                 switch (toString.call(v)) {
                     case '[object Number]':
                     case '[object String]':
-                        return v;
                     default:
                         if (v.$duplicate !== undefined) {
-                            return singleProp(k, duplicates[v.$duplicate], true);
+                            v = packClassInstance(duplicates[v.$duplicate]);
+                            break;
                         }
 
-                        if (!isDuplicate) {
-                            var duplicateId = duplicates.indexOf(v);
-                            if (duplicateId !== -1) {
-                                return {
-                                    $ref: duplicateId
-                                }
+                        var duplicateId = duplicates.indexOf(v);
+                        if (duplicateId !== -1) {
+                            return {
+                                $ref: duplicateId
                             }
                         }
 
-                        var className = serializer.getClassName(v);
-                        if (className) {
-                            v = (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') ?
-                                v.toJSON() :
-                                util._extend({}, v);
-                            v.$className = className;
-                        } else if (v.toJSON !== originalToJSON && typeof v.toJSON === 'function') {
-                            v = v.toJSON();
-                        }
+                        v = packClassInstance(v);
                 }
             }
             return v;
@@ -141,18 +141,17 @@ module.exports = serializer = {
      * @returns {*}
      */
     parse: function (str) {
-        // console.log(str);
-        var first = JSON.parse(str), me, duplicates, tmp, resolvedObj = [];
-        if (!first.$meta && !first.$meta.serialize) {
+        var rawObject = JSON.parse(str), main, duplicates, tmp, resolvedObj = [];
+        if (rawObject.main === void 0) {
             throw new Error('Invalid argument passed');
         }
-        me = first.$meta.serialize.me;
-        duplicates = first.$meta.serialize.duplicates || [];
+        main = rawObject.main;
+        duplicates = rawObject.$duplicates || [];
 
         function buildInstance(className, current) {
             var ctor = serializer.getConstructor(className);
             if (!ctor) {
-                throw new Error("Cannot find constructor for class name <" + className +">");
+                throw new Error("Cannot find constructor for class name `" + className +"`");
             }
             delete current.$className;
             return util._extend(Object.create(ctor.prototype, {
@@ -237,8 +236,8 @@ module.exports = serializer = {
             }
         }
         resolveRecursion(duplicates);
-        tmp = [me];
-        resolveRecursion(me, 0, tmp);
+        tmp = [main];
+        resolveRecursion(main, 0, tmp);
         return tmp[0];
     },
 

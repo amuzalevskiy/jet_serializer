@@ -1,73 +1,67 @@
 var assert = require("assert"),
-    Jet_Serializer = require('../bin/jet_serializer');
+    serializer = require('../bin/jet_serializer');
 
-describe('Jet_Serializer', function(){
+describe('serializer', function(){
 
-    it('should serialize and unserialize empty object', function() {
-        var x = {};
-        assert.deepEqual(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
-    });
+    var cases = [
+        {},
+        [],
+        {number:5, string:"", subObject: {}, null_: null, bool: true, falsy: false},
+        [5, "", {}, null],
+        "string",
+        5.55,
+        null,
+        new Date(),
+        {x: new Date()},
+        true,
+        false
+    ];
 
-    it('should serialize and unserialize empty array', function() {
-        var x = [];
-        assert.deepEqual(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
-    });
-
-    it('should serialize and unserialize object', function() {
-        var x = {number:5, string:"", subObject: {}, null_: null};
-        assert.deepEqual(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
-    });
-
-    it('should restore dates', function() {
-        var x = new Date(), x2 = {x: new Date()};
-
-        assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x))));
-        assert.equal(x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x)).toISOString());
-        assert.equal('[object Date]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x));
-        assert.equal(x2.x.toISOString(), Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x.toISOString());
+    cases.forEach(function (data) {
+        it("should serialize and unserialize value - " + JSON.stringify(data), function () {
+            var serializedString = serializer.stringify(data);
+            var parsed = serializer.parse(serializedString);
+            assert.deepEqual(data, parsed);
+        });
     });
 
     it('should restore RegExp\'s', function() {
         var x = /test/i, x2 = {x: /test/m};
-        assert.equal('[object RegExp]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x))));
-        assert.equal(x.toString(), Jet_Serializer.parse(Jet_Serializer.stringify(x)).toString());
-        assert.equal('[object RegExp]', Object.prototype.toString.call(Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x));
-        assert.equal(x2.x.toString(), Jet_Serializer.parse(Jet_Serializer.stringify(x2)).x.toString());
+        assert.equal('[object RegExp]', Object.prototype.toString.call(serializer.parse(serializer.stringify(x))));
+        assert.equal(x.toString(), serializer.parse(serializer.stringify(x)).toString());
+        assert.equal('[object RegExp]', Object.prototype.toString.call(serializer.parse(serializer.stringify(x2)).x));
+        assert.equal(x2.x.toString(), serializer.parse(serializer.stringify(x2)).x.toString());
     });
 
     it('should serialize and unserialize object with recursive ref', function() {
         var x = {number:5, string:"", subObject: {}, null_: null}, xRes;
         x.x = x;
         x.x2 = x;
-        xRes = Jet_Serializer.parse(Jet_Serializer.stringify(x));
+        xRes = serializer.parse(serializer.stringify(x));
         assert.strictEqual(xRes, xRes.x);
         assert.strictEqual(xRes.x, xRes.x2);
     });
 
-    it('should serialize and unserialize array', function() {
-        var x = [5, "", {}, null];
-        assert.deepEqual(x, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
-    });
-
     it('should ignore functions in object', function() {
         var x = {fn: function (){}, x: 5};
-        assert.deepEqual({x: 5}, Jet_Serializer.parse(Jet_Serializer.stringify(x)));
+        assert.deepEqual({x: 5}, serializer.parse(serializer.stringify(x)));
     });
+
     it('should replace functions to null in array', function() {
         var x = [5, "", {}, null, function () {}, 3];
-        assert.deepEqual([5, "", {}, null, null, 3], Jet_Serializer.parse(Jet_Serializer.stringify(x)));
+        assert.deepEqual([5, "", {}, null, null, 3], serializer.parse(serializer.stringify(x)));
     });
 
     it('should call toJSON', function() {
         var xSer = {number: 5},
             x = {toJSON: function () {return xSer;}};
-        assert.deepEqual(Jet_Serializer.stringify(xSer), Jet_Serializer.stringify(x));
+        assert.deepEqual(serializer.stringify(xSer), serializer.stringify(x));
     });
 
     it('should call toJSON for inner objects', function() {
         var xSer = {number: 5},
             x = {deep: {toJSON: function () {return xSer;}}};
-        assert.deepEqual(Jet_Serializer.stringify({deep: xSer}), Jet_Serializer.stringify(x));
+        assert.deepEqual(serializer.stringify({deep: xSer}), serializer.stringify(x));
     });
 
     it('should restore classes', function() {
@@ -75,10 +69,10 @@ describe('Jet_Serializer', function(){
             this.x = 5;
         }
 
-        Jet_Serializer.registerClass('d', d);
+        serializer.registerClass('d', d);
 
         var x = new d(),
-            xRestored = Jet_Serializer.parse(Jet_Serializer.stringify(x));
+            xRestored = serializer.parse(serializer.stringify(x));
         assert(xRestored instanceof d);
         assert.equal(xRestored.x, x.x);
     });
@@ -86,9 +80,9 @@ describe('Jet_Serializer', function(){
     it('should call $wakeup for objects', function() {
         function dw () {}
         dw.prototype.$wakeup = function () {this.wakedUp = true};
-        Jet_Serializer.registerClass('dw', dw);
+        serializer.registerClass('dw', dw);
         var x = new dw(),
-            xRestored = Jet_Serializer.parse(Jet_Serializer.stringify(x));
+            xRestored = serializer.parse(serializer.stringify(x));
         assert(xRestored instanceof dw);
         assert(xRestored.wakedUp, true);
     });
@@ -98,7 +92,7 @@ describe('Jet_Serializer', function(){
             this.x = 5;
         }
 
-        Jet_Serializer.registerClass('d', d);
+        serializer.registerClass('d', d);
 
         var x = new d(),
             y = new d(),
@@ -119,7 +113,7 @@ describe('Jet_Serializer', function(){
         z.z = z;
         z.name = "z";
 
-        Jet_Serializer.stringify(x);
+        serializer.stringify(x);
 
         assert.strictEqual(x.x, x);
         assert.strictEqual(x.y, y);
@@ -140,14 +134,18 @@ describe('Jet_Serializer', function(){
         assert.equal(x.x.name, 'x');
         assert.equal(x.y.name, 'y');
         assert.equal(x.z.name, 'z');
+
+        assert.equal(Object.keys(x).length,  4);
+        assert.equal(Object.keys(y).length,  4);
+        assert.equal(Object.keys(z).length,  4);
     });
 
-    it('should restore duplicate classes', function() {
+    it('should restore duplicate class instances', function() {
         function d () {
             this.x = 5;
         }
 
-        Jet_Serializer.registerClass('d', d);
+        serializer.registerClass('d', d);
 
         var x = new d(),
             y = new d(),
@@ -165,7 +163,7 @@ describe('Jet_Serializer', function(){
         z.y = y;
         z.z = z;
 
-        var xRestored = Jet_Serializer.parse(Jet_Serializer.stringify(x));
+        var xRestored = serializer.parse(serializer.stringify(x));
         assert(xRestored instanceof d);
 
         assert.strictEqual(xRestored.x, xRestored.x.x);
