@@ -3,7 +3,8 @@ var assert = require("assert"),
 
 describe('serializer', function(){
     var sparseArray = [];
-    sparseArray[10] = 1;
+    sparseArray[2] = 1;
+    sparseArray[4] = 1;
     var cases = [
         {},
         [],
