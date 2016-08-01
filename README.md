@@ -74,8 +74,6 @@ Type `npm install, npm test` in console
 ## License
 The MIT License (MIT)
 
-Copyright (c) 2015 Andrii Muzalevskyi
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -93,7 +91,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-## Change log
-- 0.1.6 (31.07.2016) - First stable release
-- 0.1.5 (24.04.2015) - First release
